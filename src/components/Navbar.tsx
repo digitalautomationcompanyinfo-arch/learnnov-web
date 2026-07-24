@@ -27,6 +27,7 @@ export const Navbar: React.FC = () => {
     { name: t('navChat'), href: '/chat' },
     { name: language === 'ar' ? 'الإشعارات 🔔' : 'Notifications 🔔', href: '/notifications' },
     { name: language === 'ar' ? 'الملف الشخصي 👤' : 'Profile 👤', href: '/profile' },
+    { name: language === 'ar' ? 'يوتيوب و Google 📺' : 'YouTube & Google 📺', href: '/workspace' },
     { name: language === 'ar' ? 'لوحة التحكم ⚙️' : 'Control Panel ⚙️', href: '/admin' },
   ];
 
