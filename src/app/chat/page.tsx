@@ -1,0 +1,287 @@
+'use client';
+import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+import { api } from '@/services/api';
+
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+function renderMessageContent(content: string) {
+  const parts = content.split(/(```[\s\S]*?```)/g);
+
+  return parts.map((part, index) => {
+    if (part.startsWith('```') && part.endsWith('```')) {
+      const match = part.match(/```(\w*)\n?([\s\S]*?)```/);
+      const lang = match ? match[1] : '';
+      const code = match ? match[2] : part.slice(3, -3);
+
+      return (
+        <div key={index} style={{ 
+          background: 'rgba(0,0,0,0.6)', 
+          border: '1px solid rgba(255,255,255,0.1)', 
+          borderRadius: '8px', 
+          margin: '0.75rem 0', 
+          overflow: 'hidden',
+          fontFamily: 'monospace',
+          fontSize: '0.9rem',
+          textAlign: 'left'
+        }} dir="ltr">
+          {lang && (
+            <div style={{ 
+              background: 'rgba(255,255,255,0.05)', 
+              padding: '0.35rem 1rem', 
+              fontSize: '0.75rem', 
+              color: '#94a3b8', 
+              borderBottom: '1px solid rgba(255,255,255,0.08)',
+              textTransform: 'uppercase',
+              fontWeight: 'bold',
+              letterSpacing: '0.5px'
+            }}>
+              {lang}
+            </div>
+          )}
+          <pre style={{ 
+            padding: '1rem', 
+            margin: 0, 
+            overflowX: 'auto',
+            whiteSpace: 'pre',
+            color: '#a7f3d0'
+          }}>
+            <code>{code.trim()}</code>
+          </pre>
+        </div>
+      );
+    } else {
+      const inlineParts = part.split(/(`[^`]+`)/g);
+      
+      return (
+        <span key={index} style={{ whiteSpace: 'pre-wrap' }}>
+          {inlineParts.map((subPart, subIdx) => {
+            if (subPart.startsWith('`') && subPart.endsWith('`')) {
+              return (
+                <code key={subIdx} style={{ 
+                  background: 'rgba(255,255,255,0.12)', 
+                  color: '#f43f5e', 
+                  padding: '0.2rem 0.4rem', 
+                  borderRadius: '4px', 
+                  fontSize: '0.9em',
+                  fontFamily: 'monospace'
+                }}>
+                  {subPart.slice(1, -1)}
+                </code>
+              );
+            } else {
+              const boldParts = subPart.split(/(\*\*[^*]+\*\*)/g);
+              return boldParts.map((bPart, bIdx) => {
+                if (bPart.startsWith('**') && bPart.endsWith('**')) {
+                  return <strong key={bIdx} style={{ color: '#fff', fontWeight: 'bold' }}>{bPart.slice(2, -2)}</strong>;
+                }
+                
+                const italicParts = bPart.split(/(\*[^*]+\*)/g);
+                return italicParts.map((iPart, iIdx) => {
+                  if (iPart.startsWith('*') && iPart.endsWith('*')) {
+                    return <em key={iIdx} style={{ fontStyle: 'italic', color: '#cbd5e1' }}>{iPart.slice(1, -1)}</em>;
+                  }
+                  return iPart;
+                });
+              });
+            }
+          })}
+        </span>
+      );
+    }
+  });
+}
+
+interface ChatMessageResponse {
+  role: string;
+  content: string;
+  timestamp: string;
+}
+
+export default function ChatbotPage() {
+  const router = useRouter();
+  const { isLoggedIn, accessToken, isLoading } = useAuth();
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const endRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isLoading && !isLoggedIn) {
+      router.push('/login');
+    }
+  }, [isLoggedIn, isLoading, router]);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+
+    // Fetch message history from database using centralized api client
+    api.get<ChatMessageResponse[]>('/api/ai/chat/history/')
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setMessages(data.map((msg: ChatMessageResponse, idx: number) => ({
+            id: `hist-${idx}`,
+            role: msg.role as 'user' | 'assistant',
+            content: msg.content
+          })));
+        } else {
+          setMessages([
+            { id: 'welcome', role: 'assistant', content: 'أهلاً بك! أنا مساعد ليرنوف الأكاديمي. كيف يمكنني مساعدتك في دراستك اليوم؟' }
+          ]);
+        }
+      })
+      .catch(() => {
+        setMessages([
+          { id: 'welcome', role: 'assistant', content: 'أهلاً بك! أنا مساعد ليرنوف الأكاديمي. كيف يمكنني مساعدتك في دراستك اليوم؟' }
+        ]);
+      });
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isTyping]);
+
+  const sendMessage = async () => {
+    if (!input.trim() || !accessToken) return;
+    
+    const userMsg: Message = { id: Date.now().toString(), role: 'user', content: input };
+    setMessages(prev => [...prev, userMsg]);
+    setInput('');
+    setIsTyping(true);
+
+    try {
+      const data = await api.post<{ reply?: string; error?: string }>('/api/ai/chat/', {
+        message: userMsg.content
+      });
+      
+      const assistantMsg: Message = { 
+        id: (Date.now() + 1).toString(), 
+        role: 'assistant', 
+        content: data.reply || data.error || ''
+      };
+      setMessages(prev => [...prev, assistantMsg]);
+    } catch {
+      setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: 'عذراً، حدث خطأ في الاتصال بالخادم.' }]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  if (isLoading || !isLoggedIn) {
+    return (
+      <div className="loading-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: 'var(--bg-color)' }}>
+        <div className="loading-spinner"></div>
+      </div>
+    );
+  }
+
+  return (
+    <main className="dashboard-container" dir="rtl" style={{ height: '100vh', display: 'flex', flexDirection: 'column', paddingBottom: '2rem' }}>
+      <div className="glass-panel profile-header" style={{ marginBottom: '1rem', padding: '1.5rem' }}>
+        <div className="profile-avatar" style={{ width: '50px', height: '50px', fontSize: '1.5rem' }}>🤖</div>
+        <div className="profile-info">
+          <h1 style={{ fontSize: '1.8rem' }}>المساعد <span className="text-gradient">الأكاديمي الذكي</span></h1>
+          <p style={{ fontSize: '0.9rem' }}>متصل - مدعوم بـ OpenAI</p>
+        </div>
+      </div>
+
+      <div className="glass-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 0 }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {messages.map(msg => (
+            <div key={msg.id} style={{ 
+              alignSelf: msg.role === 'user' ? 'flex-start' : 'flex-end',
+              backgroundColor: msg.role === 'user' ? 'rgba(14, 165, 233, 0.12)' : 'rgba(255, 255, 255, 0.85)',
+              border: '1px solid',
+              borderColor: msg.role === 'user' ? 'rgba(14, 165, 233, 0.25)' : 'var(--glass-border)',
+              padding: '1rem 1.5rem',
+              borderRadius: '16px',
+              borderBottomRightRadius: msg.role === 'user' ? '0' : '16px',
+              borderBottomLeftRadius: msg.role === 'assistant' ? '0' : '16px',
+              maxWidth: '80%',
+              lineHeight: 1.6
+            }}>
+              {renderMessageContent(msg.content)}
+            </div>
+          ))}
+          {isTyping && (
+            <div style={{ 
+              alignSelf: 'flex-end', 
+              backgroundColor: 'rgba(255, 255, 255, 0.85)', 
+              border: '1px solid var(--glass-border)',
+              padding: '1rem 1.5rem', 
+              borderRadius: '16px', 
+              borderBottomLeftRadius: '0',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem'
+            }}>
+              <span className="dot" style={{ animationDelay: '0s' }}></span>
+              <span className="dot" style={{ animationDelay: '0.2s' }}></span>
+              <span className="dot" style={{ animationDelay: '0.4s' }}></span>
+            </div>
+          )}
+          <div ref={endRef} />
+        </div>
+        
+        <div style={{ padding: '1.5rem', borderTop: '1px solid var(--glass-border)', display: 'flex', gap: '1rem', background: 'rgba(255, 255, 255, 0.4)' }}>
+          <input 
+            type="text" 
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+            placeholder="اسأل المساعد الأكاديمي..."
+            style={{ 
+              flex: 1, 
+              padding: '1rem 1.5rem', 
+              borderRadius: '12px', 
+              border: '1px solid var(--glass-border)', 
+              background: 'rgba(255, 255, 255, 0.85)', 
+              color: 'var(--text-color)',
+              fontSize: '1rem',
+              outline: 'none',
+              fontFamily: 'inherit'
+            }}
+          />
+          <button 
+            onClick={sendMessage}
+            disabled={isTyping}
+            style={{
+              padding: '0 2rem',
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, var(--accent), var(--accent-secondary))',
+              border: 'none',
+              color: 'white',
+              fontWeight: 'bold',
+              cursor: isTyping ? 'not-allowed' : 'pointer',
+              fontSize: '1rem',
+              fontFamily: 'inherit',
+              transition: 'opacity 0.3s'
+            }}
+          >
+            إرسال
+          </button>
+        </div>
+      </div>
+
+      <style jsx global>{`
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-5px); }
+        }
+        .dot {
+          width: 8px;
+          height: 8px;
+          background-color: var(--accent);
+          border-radius: 50%;
+          display: inline-block;
+          animation: bounce 1.2s infinite ease-in-out;
+        }
+      `}</style>
+    </main>
+  );
+}
