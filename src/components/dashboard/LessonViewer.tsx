@@ -127,49 +127,29 @@ export const LessonViewer: React.FC<LessonViewerProps> = ({
       <div className="lesson-visualizer-body">
         {/* Video Player Visualizer */}
         {selectedLesson.lesson_type === 'video' && (
-          <div className="interactive-video-player glass-panel">
-            <div className="video-viewport">
-              <span className="viewport-watermark">
-                {language === 'en' && studyingProgram.title_en ? studyingProgram.title_en : studyingProgram.title}
-              </span>
-              {videoPlaying ? (
-                <div className="video-playing-animation">
-                  <div className="bar anim-bar-1"></div>
-                  <div className="bar anim-bar-2"></div>
-                  <div className="bar anim-bar-3"></div>
-                  <p style={{ color: '#fff', fontWeight: 500 }}>
-                    {language === 'ar' ? 'جاري بث المحاضرة الأكاديمية بنجاح...' : 'Streaming academic lecture successfully...'}
-                  </p>
-                </div>
-              ) : (
-                <div className="video-paused-state" onClick={() => setVideoPlaying(true)}>
-                  <div className="play-button-glow">▶</div>
-                  <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>
-                    {language === 'ar' ? 'انقر لتشغيل المحاضرة التفاعلية' : 'Click to play interactive lecture'}
-                  </p>
-                </div>
-              )}
+          <div className="interactive-video-player glass-panel" style={{ padding: '1rem', borderRadius: '16px' }}>
+            <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: '12px', background: '#000', marginBottom: '1rem' }}>
+              <iframe
+                src={`https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=0&rel=0`}
+                title={selectedLesson.title}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+              />
             </div>
-            <div className="video-controls-bar">
-              <button
-                onClick={() => setVideoPlaying(!videoPlaying)}
-                className={`video-play-toggle-btn ${videoPlaying ? 'playing' : ''}`}
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', padding: '0.5rem 0' }}>
+              <span style={{ fontSize: '0.85rem', color: '#10B981', fontWeight: 700 }}>
+                ● {language === 'ar' ? 'بث مباشر عالي الدقة عبر YouTube' : '● Live HD Stream via YouTube'}
+              </span>
+              <a
+                href={`https://classroom.google.com/share?url=${encodeURIComponent(`https://learnnov-web.vercel.app`)}&title=${encodeURIComponent(selectedLesson.title)}`}
+                target="_blank"
+                rel="noreferrer"
+                style={{ background: '#4285F4', color: '#FFF', padding: '0.4rem 0.8rem', borderRadius: '8px', textDecoration: 'none', fontWeight: 700, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
               >
-                {videoPlaying
-                  ? language === 'ar'
-                    ? '⏸️ إيقاف مؤقت'
-                    : '⏸️ Pause'
-                  : language === 'ar'
-                  ? '▶️ تشغيل المحاضرة'
-                  : '▶️ Play Lecture'}
-              </button>
-
-              <div className="video-progress-slider-container">
-                <div className="progress-slider-track">
-                  <div className="progress-slider-fill" style={{ width: `${videoProgress}%` }}></div>
-                </div>
-                <span className="video-progress-percentage">{Math.round(videoProgress)}%</span>
-              </div>
+                🏫 {language === 'ar' ? 'مشاركة في Google Classroom' : 'Share to Google Classroom'}
+              </a>
             </div>
             {videoProgress >= 100 && (
               <div className="video-completed-banner">

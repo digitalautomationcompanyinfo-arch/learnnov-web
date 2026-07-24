@@ -3,6 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
 
 export const metadata: Metadata = {
   title: "LearnNov Platform",
@@ -23,7 +24,10 @@ export default function RootLayout({
         <LanguageProvider>
           <AuthProvider>
             <Navbar />
-            {children}
+            <div style={{ minHeight: 'calc(100vh - 250px)' }}>
+              {children}
+            </div>
+            <Footer />
           </AuthProvider>
         </LanguageProvider>
       </body>
