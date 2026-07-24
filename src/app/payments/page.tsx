@@ -88,6 +88,18 @@ export default function PaymentsPage() {
     // Initial query to discount check using centralized api client
     api.post('/api/payments/discount/apply/', {}).catch(() => {});
 
+    const defaultInvoices: Invoice[] = [
+      { id: 981, item_name: 'رسوم التحاق: احتراف هندسة الأوامر والذكاء الاصطناعي', original_amount: 450, discount_applied: 50, net_amount: 400, status: 'paid', date: '2026-07-20', txn_ref: 'TXN-9821-LNOV' },
+      { id: 982, item_name: 'رسوم دراسية: بناء تطبيقات الويب الفائقة السرعة بـ Next.js', original_amount: 590, discount_applied: 0, net_amount: 590, status: 'unpaid', date: '2026-07-23' }
+    ];
+
+    const defaultPlans: Plan[] = [
+      { id: 1, name: 'الباقة الفردية المتقدمة', name_en: 'Advanced Individual Pass', slug: 'individual-pass', description: 'وصول لا محدود لكافة المقررات التخصصية والاختبارات المعتمدة', price: 190, currency: 'ر.س', billing_cycle: 'monthly' },
+      { id: 2, name: 'العضوية السنوية الخارقة', name_en: 'Enterprise Annual Membership', slug: 'annual-membership', description: 'وصول شامل مع إصدار الشهادات الرقمية المعتمدة مجاناً وبلا حدود', price: 1490, currency: 'ر.س', billing_cycle: 'yearly' }
+    ];
+
+    setSubPlans(defaultPlans);
+
     // Fetch invoices using centralized api client
     api.get<any>('/api/payments/orders/')
       .then(json => {
@@ -99,61 +111,20 @@ export default function PaymentsPage() {
             original_amount: order.amount,
             discount_applied: 0,
             net_amount: order.amount,
-            status: (order.status === 'PAID' ? 'paid' : order.status === 'PENDING' ? 'pending' : 'unpaid') as 'paid' | 'pending' | 'unpaid',
-            date: new Date(order.created_at).toISOString().split('T')[0],
-            txn_ref: order.transaction_reference || undefined
+            status: (order.status === 'completed' || order.status === 'paid' ? 'paid' : 'unpaid') as 'paid' | 'unpaid' | 'pending',
+            date: order.created_at ? order.created_at.split('T')[0] : '2026-07-24',
+            txn_ref: order.transaction_reference || `TXN-${order.id}`
           }));
           setInvoices(mappedInvoices);
         } else {
-          // Fallback to premium template
-          setInvoices([
-            {
-              id: 901,
-              item_name: "رسوم ماجستير الذكاء الاصطناعي - الفصل الأول",
-              original_amount: 22500,
-              discount_applied: 0,
-              net_amount: 22500,
-              status: "unpaid",
-              date: "2026-05-24"
-            },
-            {
-              id: 902,
-              item_name: "رسوم القبول والتسجيل الأكاديمي الإداري",
-              original_amount: 500,
-              discount_applied: 0,
-              net_amount: 500,
-              status: "paid",
-              date: "2026-05-24",
-              txn_ref: "TXN-LNOV-9328401"
-            }
-          ]);
+          setInvoices(defaultInvoices);
         }
-        setLoading(false);
       })
-      .catch(() => {
-        setInvoices([
-          {
-            id: 901,
-            item_name: "رسوم ماجستير الذكاء الاصطناعي - الفصل الأول",
-            original_amount: 22500,
-            discount_applied: 0,
-            net_amount: 22500,
-            status: "unpaid",
-            date: "2026-05-24"
-          },
-          {
-            id: 902,
-            item_name: "رسوم القبول والتسجيل الأكاديمي الإداري",
-            original_amount: 500,
-            discount_applied: 0,
-            net_amount: 500,
-            status: "paid",
-            date: "2026-05-24",
-            txn_ref: "TXN-LNOV-9328401"
-          }
-        ]);
-        setLoading(false);
-      });
+      .catch((err) => {
+        console.warn("API offline, using fallback invoices:", err);
+        setInvoices(defaultInvoices);
+      })
+      .finally(() => setLoading(false));
 
     // Fetch active user subscription using centralized api client
     api.get<any>('/api/payments/subscriptions/my/')
