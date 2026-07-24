@@ -21,7 +21,7 @@ vi.mock('next/navigation', () => ({
 // Mock next/link
 vi.mock('next/link', () => ({
   default: ({ children, href, ...props }: any) => {
-    return <a href={href} {...props}>{children}</a>;
+    return React.createElement('a', { href, ...props }, children);
   },
 }));
 
