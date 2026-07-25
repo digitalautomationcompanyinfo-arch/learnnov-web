@@ -21,18 +21,23 @@ export async function POST(request: Request) {
     let userId = Date.now().toString();
 
     if (user) {
-      // In a real app we would check password hash here
+      if (user.password && user.password !== password) {
+        return NextResponse.json({ error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' }, { status: 401 });
+      }
       role = user.role;
       name = user.name;
       userId = user.id;
     } else {
-      // Fallback for demo users
-      if (email.includes('admin')) {
+      // Fallback for demo users only if they match demo passwords
+      if (email.includes('admin') && password === 'Password123!') {
         role = 'admin';
         name = 'م. سارة العتيبي (مدير)';
-      } else if (email.includes('dr.')) {
+      } else if (email.includes('dr.') && password === 'Password123!') {
         role = 'instructor';
         name = 'د. علي البراك (محاضر)';
+      } else if (email.includes('student.demo') && password === 'Password123!') {
+        role = 'student';
+        name = 'طالب ليرنوف المتميز';
       } else {
         return NextResponse.json({ error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' }, { status: 401 });
       }

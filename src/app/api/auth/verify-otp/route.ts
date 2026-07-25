@@ -34,6 +34,7 @@ export async function POST(request: Request) {
       name: record.userData.name,
       email: record.userData.email,
       role: record.userData.role,
+      password: record.userData.password, // Save password for future login
       status: 'active'
     };
 

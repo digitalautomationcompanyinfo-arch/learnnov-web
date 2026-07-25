@@ -112,6 +112,21 @@ export default function LoginPage() {
         throw new Error(data.error || 'رمز التحقق غير صحيح');
       }
 
+      // Sync user to client-side db-store (localStorage) so Profile/Admin pages know about them
+      const db = loadDatabase();
+      if (!db.users.find(u => u.email.toLowerCase() === data.user.email.toLowerCase())) {
+        db.users.push({
+          id: Date.now().toString(),
+          name: data.user.name,
+          email: data.user.email,
+          role: data.user.role,
+          avatar: data.user.avatar,
+          courses: [],
+          certificates: []
+        });
+        saveDatabase(db);
+      }
+
       login(data.user.role, data.user.name, data.user.avatar, data.user.email);
 
       setSuccess(language === 'ar' ? 'تم التحقق من البريد وإنشاء الحساب بنجاح!' : 'Email verified and account created successfully!');
@@ -146,6 +161,21 @@ export default function LoginPage() {
         throw new Error(data.error || 'فشل تسجيل الدخول');
       }
 
+      // Sync user to client-side db-store (localStorage)
+      const db = loadDatabase();
+      if (!db.users.find(u => u.email.toLowerCase() === data.user.email.toLowerCase())) {
+        db.users.push({
+          id: Date.now().toString(),
+          name: data.user.name,
+          email: data.user.email,
+          role: data.user.role,
+          avatar: data.user.avatar,
+          courses: [],
+          certificates: []
+        });
+        saveDatabase(db);
+      }
+
       login(data.user.role, data.user.name, data.user.avatar, data.user.email);
 
       if (data.user.role === 'admin') {
@@ -166,28 +196,31 @@ export default function LoginPage() {
     const ssoEmail = 'user.workspace@learnnov.com';
     const ssoName = 'حساب Google Workspace المؤسسي';
     
-    // Simulate login via SSO through backend
-    const res = await fetch('/api/auth/register', {
+    // Call our new SSO endpoint which bypasses OTP
+    const res = await fetch('/api/auth/sso', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: ssoName, email: ssoEmail, password: 'SSO_PASSWORD', role: 'student' })
+      body: JSON.stringify({ name: ssoName, email: ssoEmail, role: 'student' })
     });
     const data = await res.json();
-    if (res.ok || res.status === 409) {
-      // If 409, it means already registered, so we login instead
-      if (res.status === 409) {
-        const loginRes = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: ssoEmail, password: 'SSO_PASSWORD' })
+    
+    if (res.ok) {
+      // Sync user to client-side db-store (localStorage)
+      const db = loadDatabase();
+      if (!db.users.find(u => u.email.toLowerCase() === data.user.email.toLowerCase())) {
+        db.users.push({
+          id: Date.now().toString(),
+          name: data.user.name,
+          email: data.user.email,
+          role: data.user.role,
+          avatar: data.user.avatar,
+          courses: [],
+          certificates: []
         });
-        const loginData = await loginRes.json();
-        if (loginRes.ok) {
-          login(loginData.user.role, loginData.user.name, loginData.user.avatar, loginData.user.email);
-        }
-      } else {
-        login(data.user.role, data.user.name, data.user.avatar, data.user.email);
+        saveDatabase(db);
       }
+
+      login(data.user.role, data.user.name, data.user.avatar, data.user.email);
       router.push('/workspace');
     }
   };
