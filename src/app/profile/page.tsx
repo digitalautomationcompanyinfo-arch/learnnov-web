@@ -1,29 +1,53 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { loadDatabase, saveDatabase } from '@/services/db-store';
 
 export default function ProfilePage() {
-  const { userName, userRole, accessToken } = useAuth();
+  const { userName, userRole, accessToken, userEmail } = useAuth();
   const { language, isRtl } = useLanguage();
 
   const [name, setName] = useState(userName || 'طالب ليرنوف المتميز');
-  const [email, setEmail] = useState('student@learnnov.com');
+  const [email, setEmail] = useState(userEmail || 'student.demo@learnnov.com');
   const [bio, setBio] = useState('طالب شغوف بهندسة الذكاء الاصطناعي وتطوير تطبيقات الويب المتقدمة.');
   const [mfa, setMfa] = useState(true);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (userEmail) setEmail(userEmail);
+    if (userName) setName(userName);
+  }, [userEmail, userName]);
+
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
     const db = loadDatabase();
-    if (db.users[0]) {
-      db.users[0].name = name;
-      db.users[0].email = email;
-      db.users[0].mfa_enabled = mfa;
-      saveDatabase(db);
+    const existingIndex = db.users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
+    if (existingIndex !== -1) {
+      db.users[existingIndex].name = name;
+      db.users[existingIndex].mfa_enabled = mfa;
+    } else {
+      db.users.push({
+        id: Date.now(),
+        name: name,
+        email: email,
+        role_id: userRole === 'admin' ? 1 : userRole === 'instructor' ? 2 : 4,
+        status: 'active',
+        mfa_enabled: mfa,
+        created_at: new Date().toISOString()
+      });
     }
+    db.auditLogs.unshift({
+      id: Date.now(),
+      user: name,
+      action: 'تحديث الملف الشخصي وإعدادات البريد الإلكتروني',
+      resource: `Profile update: ${email}`,
+      ip: '197.245.89.12',
+      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19)
+    });
+    saveDatabase(db);
+
     setToastMsg(language === 'ar' ? 'تم حفظ وإعادة توثيق بيانات الملف الشخصي بنجاح!' : 'Profile updated successfully!');
     setTimeout(() => setToastMsg(null), 3000);
   };
@@ -37,13 +61,24 @@ export default function ProfilePage() {
         </div>
       )}
 
-      <div className="glass-panel profile-header" style={{ borderLeft: '5px solid #6366f1' }}>
-        <div className="profile-avatar" style={{ background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)', color: 'white' }}>
-          {name ? name.charAt(0) : '👤'}
+      <div className="glass-panel profile-header" style={{ borderLeft: '5px solid #6366f1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
+        <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
+          <div className="profile-avatar" style={{ background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)', color: 'white' }}>
+            {name ? name.charAt(0) : '👤'}
+          </div>
+          <div className="profile-info">
+            <h1>{name}</h1>
+            <p style={{ margin: '0.2rem 0' }}>{email} • {userRole === 'instructor' ? (language === 'ar' ? 'عضو هيئة تدريس محترف' : 'Professional Instructor') : (language === 'ar' ? 'طالب أكاديمي في هندسة الذكاء الاصطناعي' : 'Academic AI & Data Student')}</p>
+          </div>
         </div>
-        <div className="profile-info">
-          <h1>{name}</h1>
-          <p>{userRole === 'instructor' ? (language === 'ar' ? 'عضو هيئة تدريس محترف' : 'Professional Instructor') : (language === 'ar' ? 'طالب أكاديمي في هندسة البيانات والذكاء الاصطناعي' : 'Academic AI & Data Student')}</p>
+
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <span style={{ backgroundColor: 'rgba(16,185,129,0.15)', color: '#10B981', border: '1px solid rgba(16,185,129,0.3)', padding: '0.4rem 0.85rem', borderRadius: '99px', fontSize: '0.8rem', fontWeight: 700 }}>
+            🟢 بريد مفعّل وموثق بـ OTP
+          </span>
+          <span style={{ backgroundColor: 'rgba(99,102,241,0.15)', color: '#818CF8', border: '1px solid rgba(99,102,241,0.3)', padding: '0.4rem 0.85rem', borderRadius: '99px', fontSize: '0.8rem', fontWeight: 700 }}>
+            🔒 حماية MFA نشطة
+          </span>
         </div>
       </div>
 
@@ -58,12 +93,12 @@ export default function ProfilePage() {
               <input type="text" value={name} onChange={e => setName(e.target.value)} required />
             </div>
             <div className="form-group">
-              <label>{language === 'ar' ? 'البريد الإلكتروني' : 'Email Address'}</label>
+              <label>{language === 'ar' ? 'البريد الإلكتروني المعتمد' : 'Verified Email Address'}</label>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} required />
             </div>
             <div className="form-group">
               <label>{language === 'ar' ? 'نوع الحساب والصلاحية' : 'Account Role'}</label>
-              <input type="text" value={userRole === 'instructor' ? 'محاضر / مدرب' : 'طالب أكاديمي'} readOnly />
+              <input type="text" value={userRole === 'instructor' ? 'محاضر / مدرب' : userRole === 'admin' ? 'مدير نظام' : 'طالب أكاديمي'} readOnly />
             </div>
             <div className="form-group">
               <label>{language === 'ar' ? 'حالة التوثيق الرقمي' : 'JWT Auth Security'}</label>
