@@ -25,6 +25,7 @@ export const Navbar: React.FC = () => {
     { name: t('navCertificates'), href: '/certificates' },
     { name: t('navPayments'), href: '/payments' },
     { name: t('navChat'), href: '/chat' },
+    { name: language === 'ar' ? 'المشاريع والواجبات 📁' : 'Projects & Assignments 📁', href: '/assignments' },
     { name: language === 'ar' ? 'الإشعارات 🔔' : 'Notifications 🔔', href: '/notifications' },
     { name: language === 'ar' ? 'الملف الشخصي 👤' : 'Profile 👤', href: '/profile' },
     { name: language === 'ar' ? 'تحليلات الأداء 📊' : 'Analytics & Performance 📊', href: '/analytics' },
