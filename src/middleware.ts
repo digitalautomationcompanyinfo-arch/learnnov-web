@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 
 const PROTECTED_ROUTES = [
-  '/admin', '/analytics', '/assignments', '/career', '/certificates',
+  '/admin', '/instructor', '/analytics', '/assignments', '/career', '/certificates',
   '/chat', '/discussions', '/exams', '/labs', '/leaderboard', '/live',
   '/notifications', '/payments', '/profile', '/workspace'
 ];

@@ -116,7 +116,7 @@ export default function LoginPage() {
       const db = loadDatabase();
       if (!db.users.find(u => u.email.toLowerCase() === data.user.email.toLowerCase())) {
         db.users.push({
-          id: Date.now().toString(),
+          id: data.user.id || Date.now().toString(),
           name: data.user.name,
           email: data.user.email,
           role: data.user.role,
@@ -165,7 +165,7 @@ export default function LoginPage() {
       const db = loadDatabase();
       if (!db.users.find(u => u.email.toLowerCase() === data.user.email.toLowerCase())) {
         db.users.push({
-          id: Date.now().toString(),
+          id: data.user.id || Date.now().toString(),
           name: data.user.name,
           email: data.user.email,
           role: data.user.role,
@@ -209,7 +209,7 @@ export default function LoginPage() {
       const db = loadDatabase();
       if (!db.users.find(u => u.email.toLowerCase() === data.user.email.toLowerCase())) {
         db.users.push({
-          id: Date.now().toString(),
+          id: data.user.id || Date.now().toString(),
           name: data.user.name,
           email: data.user.email,
           role: data.user.role,

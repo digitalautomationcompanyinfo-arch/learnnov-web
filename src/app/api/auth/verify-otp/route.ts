@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     const token = await signToken({ userId, role: newUser.role, email: newUser.email, name: newUser.name, avatar });
 
     // Set HttpOnly Cookie
-    const response = NextResponse.json({ success: true, user: { name: newUser.name, email: newUser.email, role: newUser.role, avatar } }, { status: 201 });
+    const response = NextResponse.json({ success: true, user: { id: newUser.id, name: newUser.name, email: newUser.email, role: newUser.role, avatar } }, { status: 201 });
     response.cookies.set({
       name: 'learnnov_session',
       value: token,

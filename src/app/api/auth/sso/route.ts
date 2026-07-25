@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     const avatar = user.role === 'instructor' ? 'د' : user.role === 'admin' ? 'م' : 'أ';
     const token = await signToken({ userId, role: user.role, email: user.email, name: user.name, avatar });
 
-    const response = NextResponse.json({ success: true, user: { name: user.name, email: user.email, role: user.role, avatar } }, { status: 200 });
+    const response = NextResponse.json({ success: true, user: { id: userId, name: user.name, email: user.email, role: user.role, avatar } }, { status: 200 });
     response.cookies.set({
       name: 'learnnov_session',
       value: token,

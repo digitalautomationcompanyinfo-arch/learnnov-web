@@ -5,7 +5,17 @@ import { sendOtpEmail } from '@/lib/email';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, email, password, role = 'student' } = body;
+    const { name, email, password } = body;
+    let { role = 'student' } = body;
+
+    // Security: Enforce roles based on domain to prevent client manipulation
+    if (email.toLowerCase().endsWith('@admin.learnnov.com')) {
+      role = 'admin';
+    } else if (email.toLowerCase().endsWith('@instructor.learnnov.com')) {
+      role = 'instructor';
+    } else {
+      role = 'student';
+    }
 
     if (!name || !email || !password) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
