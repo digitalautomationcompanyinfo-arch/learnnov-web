@@ -32,7 +32,9 @@ export const Navbar: React.FC = () => {
     { name: language === 'ar' ? 'الملف الشخصي 👤' : 'Profile 👤', href: '/profile' },
     { name: language === 'ar' ? 'تحليلات الأداء 📊' : 'Analytics & Performance 📊', href: '/analytics' },
     { name: language === 'ar' ? 'يوتيوب و Google 📺' : 'YouTube & Google 📺', href: '/workspace' },
+    { name: language === 'ar' ? 'الفصول المباشرة 🔴' : 'Live Classes 🔴', href: '/live' },
     { name: language === 'ar' ? 'التوجيه المهني 💼' : 'Career Guidance 💼', href: '/career' },
+    { name: language === 'ar' ? 'مركز الدعم 🛟' : 'Help Center 🛟', href: '/support' },
     { name: language === 'ar' ? 'لوحة التحكم ⚙️' : 'Control Panel ⚙️', href: '/admin' },
   ];
 
