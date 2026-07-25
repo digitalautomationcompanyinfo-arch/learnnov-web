@@ -90,6 +90,35 @@ export const Footer: React.FC = () => {
           <Link href="/login" style={{ color: '#94A3B8', textDecoration: 'none' }}>{language === 'ar' ? 'تسجيل الدخول' : 'Login'}</Link>
         </div>
       </div>
+
+      {/* Floating AI Academic Assistant Widget Button */}
+      <Link 
+        href="/chat" 
+        style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: isRtl ? 'auto' : '24px',
+          left: isRtl ? '24px' : 'auto',
+          backgroundColor: '#6366F1',
+          background: 'linear-gradient(135deg, #6366F1 0%, #06B6D4 100%)',
+          color: '#FFF',
+          padding: '0.85rem 1.35rem',
+          borderRadius: '99px',
+          boxShadow: '0 8px 24px rgba(99, 102, 241, 0.4)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.65rem',
+          textDecoration: 'none',
+          fontWeight: 800,
+          fontSize: '0.9rem',
+          zIndex: 1000,
+          transition: 'transform 0.2s ease, boxShadow 0.2s ease'
+        }}
+      >
+        <span style={{ fontSize: '1.2rem' }}>🤖</span>
+        <span>{language === 'ar' ? 'المساعد الأكاديمي الذكي' : 'AI Academic Tutor'}</span>
+      </Link>
+
     </footer>
   );
 };
