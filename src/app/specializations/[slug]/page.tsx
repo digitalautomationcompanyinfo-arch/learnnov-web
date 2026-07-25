@@ -112,6 +112,14 @@ export default function SpecializationDetails({ params }: { params: Promise<{ sl
     }
   };
 
+  if (isLoading || !isLoggedIn) {
+    return (
+      <div className="loading-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#0b0f19' }}>
+        <div className="loading-spinner"></div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="spinner-container" style={{ minHeight: '50vh' }}>
@@ -122,14 +130,6 @@ export default function SpecializationDetails({ params }: { params: Promise<{ sl
 
   if (!spec) {
     return <div style={{ textAlign: 'center', marginTop: '100px', fontSize: '1.5rem', color: 'white' }}>لم يتم العثور على المسار التخصصي المطلوب.</div>;
-  }
-
-  if (isLoading || !isLoggedIn) {
-    return (
-      <div className="loading-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#0b0f19' }}>
-        <div className="loading-spinner"></div>
-      </div>
-    );
   }
 
   return (
