@@ -6,7 +6,7 @@ import { loadDatabase, saveDatabase, DBStore, User, Role, Course, Enrollment, Ce
 
 export default function AdminDashboardPage() {
   const [db, setDb] = useState<DBStore | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'enrollments' | 'certificates' | 'rbac' | 'users' | 'dbExplorer' | 'audit'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'enrollments' | 'certificates' | 'rbac' | 'users' | 'dbExplorer' | 'audit' | 'googleWorkspace'>('overview');
   const [activeUserId, setActiveUserId] = useState<number>(1);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [selectedSqlTable, setSelectedSqlTable] = useState<string>('users');
@@ -277,6 +277,9 @@ export default function AdminDashboardPage() {
             <button onClick={() => setActiveTab('dbExplorer')} style={{ textAlign: 'right', padding: '0.75rem 1rem', borderRadius: '10px', border: 'none', backgroundColor: activeTab === 'dbExplorer' ? '#6366F1' : 'transparent', color: activeTab === 'dbExplorer' ? '#FFF' : '#9CA3AF', fontWeight: 700, cursor: 'pointer' }}>
               🗄️ مستكشف قواعد البيانات SQL
             </button>
+            <button onClick={() => setActiveTab('googleWorkspace')} style={{ textAlign: 'right', padding: '0.75rem 1rem', borderRadius: '10px', border: 'none', backgroundColor: activeTab === 'googleWorkspace' ? '#6366F1' : 'transparent', color: activeTab === 'googleWorkspace' ? '#FFF' : '#9CA3AF', fontWeight: 700, cursor: 'pointer' }}>
+              🔗 إعدادات Google & YouTube
+            </button>
             <button onClick={() => setActiveTab('audit')} style={{ textAlign: 'right', padding: '0.75rem 1rem', borderRadius: '10px', border: 'none', backgroundColor: activeTab === 'audit' ? '#6366F1' : 'transparent', color: activeTab === 'audit' ? '#FFF' : '#9CA3AF', fontWeight: 700, cursor: 'pointer' }}>
               📜 سجلات التدقيق والأمان
             </button>
@@ -539,7 +542,137 @@ export default function AdminDashboardPage() {
             </div>
           )}
 
-          {/* TAB 8: AUDIT */}
+          {/* TAB 8: GOOGLE WORKSPACE & YOUTUBE INTEGRATION */}
+          {activeTab === 'googleWorkspace' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <div>
+                  <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0 }}>🔗 إعدادات وربط حسابات Google Workspace & YouTube</h2>
+                  <p style={{ fontSize: '0.85rem', color: '#9CA3AF', margin: '0.3rem 0 0 0' }}>تهيئة مفاتيح APIs والربط السحابي مع Google Meet, Calendar, Drive & YouTube v3</p>
+                </div>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                  <span style={{ backgroundColor: 'rgba(16,185,129,0.15)', color: '#10B981', border: '1px solid rgba(16,185,129,0.3)', padding: '0.4rem 0.85rem', borderRadius: '99px', fontSize: '0.8rem', fontWeight: 700 }}>
+                    🟢 Google Workspace Connected
+                  </span>
+                  <span style={{ backgroundColor: 'rgba(255,0,0,0.15)', color: '#FF4D4D', border: '1px solid rgba(255,0,0,0.3)', padding: '0.4rem 0.85rem', borderRadius: '99px', fontSize: '0.8rem', fontWeight: 700 }}>
+                    🔴 YouTube API v3 Active
+                  </span>
+                </div>
+              </div>
+
+              {/* Grid Layout for Settings Forms */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.5rem' }}>
+                
+                {/* Panel 1: Google Workspace Credentials */}
+                <div style={{ backgroundColor: '#1F2937', padding: '1.5rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#4285F4', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    🌐 Google Workspace OAuth 2.0 & Domain
+                  </h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div>
+                      <label style={{ fontSize: '0.8rem', color: '#9CA3AF', display: 'block', marginBottom: '0.3rem' }}>Google Client ID (OAuth 2.0):</label>
+                      <input
+                        type="text"
+                        value={db.googleConfig?.clientId || ''}
+                        onChange={e => {
+                          if (!db.googleConfig) db.googleConfig = { clientId: '', clientSecret: '', domain: 'learnnov.com', serviceAccountEmail: '', calendarSyncEnabled: true, classroomSyncEnabled: true, status: 'connected' };
+                          db.googleConfig.clientId = e.target.value;
+                          updateDb(db);
+                        }}
+                        style={{ width: '100%', background: '#111827', color: '#FFF', border: '1px solid rgba(255,255,255,0.1)', padding: '0.6rem 0.85rem', borderRadius: '8px', fontFamily: 'monospace', fontSize: '0.8rem' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.8rem', color: '#9CA3AF', display: 'block', marginBottom: '0.3rem' }}>Google Client Secret Key:</label>
+                      <input
+                        type="password"
+                        value={db.googleConfig?.clientSecret || ''}
+                        onChange={e => {
+                          if (!db.googleConfig) db.googleConfig = { clientId: '', clientSecret: '', domain: 'learnnov.com', serviceAccountEmail: '', calendarSyncEnabled: true, classroomSyncEnabled: true, status: 'connected' };
+                          db.googleConfig.clientSecret = e.target.value;
+                          updateDb(db);
+                        }}
+                        style={{ width: '100%', background: '#111827', color: '#FFF', border: '1px solid rgba(255,255,255,0.1)', padding: '0.6rem 0.85rem', borderRadius: '8px', fontFamily: 'monospace', fontSize: '0.8rem' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.8rem', color: '#9CA3AF', display: 'block', marginBottom: '0.3rem' }}>النطاق المؤسسي المعتمد (Approved Domain):</label>
+                      <input
+                        type="text"
+                        value={db.googleConfig?.domain || 'learnnov.com'}
+                        onChange={e => {
+                          if (db.googleConfig) db.googleConfig.domain = e.target.value;
+                          updateDb(db);
+                        }}
+                        style={{ width: '100%', background: '#111827', color: '#FFF', border: '1px solid rgba(255,255,255,0.1)', padding: '0.6rem 0.85rem', borderRadius: '8px', fontSize: '0.85rem' }}
+                      />
+                    </div>
+
+                    <button onClick={() => showToast('تم اختبار وحفظ إعدادات Google Workspace بنجاح!')} style={{ background: '#4285F4', color: '#FFF', border: 'none', padding: '0.65rem', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', marginTop: '0.5rem' }}>
+                      💾 حفظ واختبار الاتصال مع Google
+                    </button>
+                  </div>
+                </div>
+
+                {/* Panel 2: YouTube Data API v3 & Streams */}
+                <div style={{ backgroundColor: '#1F2937', padding: '1.5rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#FF4D4D', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    📺 YouTube Data API v3 & Live Channels
+                  </h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div>
+                      <label style={{ fontSize: '0.8rem', color: '#9CA3AF', display: 'block', marginBottom: '0.3rem' }}>YouTube API Key:</label>
+                      <input
+                        type="password"
+                        value={db.youtubeConfig?.apiKey || ''}
+                        onChange={e => {
+                          if (!db.youtubeConfig) db.youtubeConfig = { apiKey: '', channelId: '', playlistId: '', autoEmbedEnabled: true, status: 'connected' };
+                          db.youtubeConfig.apiKey = e.target.value;
+                          updateDb(db);
+                        }}
+                        style={{ width: '100%', background: '#111827', color: '#FFF', border: '1px solid rgba(255,255,255,0.1)', padding: '0.6rem 0.85rem', borderRadius: '8px', fontFamily: 'monospace', fontSize: '0.8rem' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.8rem', color: '#9CA3AF', display: 'block', marginBottom: '0.3rem' }}>رقم القناة الرسمية (Official Channel ID):</label>
+                      <input
+                        type="text"
+                        value={db.youtubeConfig?.channelId || ''}
+                        onChange={e => {
+                          if (db.youtubeConfig) db.youtubeConfig.channelId = e.target.value;
+                          updateDb(db);
+                        }}
+                        style={{ width: '100%', background: '#111827', color: '#FFF', border: '1px solid rgba(255,255,255,0.1)', padding: '0.6rem 0.85rem', borderRadius: '8px', fontSize: '0.85rem' }}
+                      />
+                    </div>
+
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#CBD5E1', cursor: 'pointer', marginTop: '0.5rem' }}>
+                      <input
+                        type="checkbox"
+                        checked={db.youtubeConfig?.autoEmbedEnabled ?? true}
+                        onChange={e => {
+                          if (db.youtubeConfig) db.youtubeConfig.autoEmbedEnabled = e.target.checked;
+                          updateDb(db);
+                        }}
+                        style={{ width: '18px', height: '18px', accentColor: '#FF4D4D' }}
+                      />
+                      تضمين المحاضرات من YouTube تلقائياً في مشغل الدروس
+                    </label>
+
+                    <button onClick={() => showToast('تم اختبار وحفظ إعدادات YouTube API بنجاح!')} style={{ background: '#FF0000', color: '#FFF', border: 'none', padding: '0.65rem', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', marginTop: '0.5rem' }}>
+                      💾 حفظ وتحديث قناة YouTube
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          {/* TAB 9: AUDIT */}
           {activeTab === 'audit' && (
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>

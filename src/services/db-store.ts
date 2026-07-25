@@ -191,6 +191,42 @@ const INITIAL_EXAMS: Exam[] = [
   }
 ];
 
+export interface GoogleWorkspaceConfig {
+  clientId: string;
+  clientSecret: string;
+  domain: string;
+  serviceAccountEmail: string;
+  calendarSyncEnabled: boolean;
+  classroomSyncEnabled: boolean;
+  status: 'connected' | 'disconnected';
+}
+
+export interface YouTubeConfig {
+  apiKey: string;
+  channelId: string;
+  playlistId: string;
+  autoEmbedEnabled: boolean;
+  status: 'connected' | 'disconnected';
+}
+
+const INITIAL_GOOGLE_CONFIG: GoogleWorkspaceConfig = {
+  clientId: '1098234710923-learnnov-web.apps.googleusercontent.com',
+  clientSecret: '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6',
+  domain: 'learnnov.com',
+  serviceAccountEmail: 'workspace-service@learnnov.iam.gserviceaccount.com',
+  calendarSyncEnabled: true,
+  classroomSyncEnabled: true,
+  status: 'connected'
+};
+
+const INITIAL_YOUTUBE_CONFIG: YouTubeConfig = {
+  apiKey: 'AIzaSyLearnNov_YouTube_Data_v3_Key_2026',
+  channelId: 'UC_LearnNov_Academic_Cloud_Official',
+  playlistId: 'PL_LearnNov_AI_and_Cybersecurity_Lectures',
+  autoEmbedEnabled: true,
+  status: 'connected'
+};
+
 export interface DBStore {
   roles: Role[];
   permissions: Permission[];
@@ -202,6 +238,8 @@ export interface DBStore {
   auditLogs: AuditLog[];
   discussions: DiscussionPost[];
   exams: Exam[];
+  googleConfig?: GoogleWorkspaceConfig;
+  youtubeConfig?: YouTubeConfig;
 }
 
 export function loadDatabase(): DBStore {
@@ -216,7 +254,9 @@ export function loadDatabase(): DBStore {
       certificates: INITIAL_CERTIFICATES,
       auditLogs: INITIAL_AUDIT_LOGS,
       discussions: INITIAL_DISCUSSIONS,
-      exams: INITIAL_EXAMS
+      exams: INITIAL_EXAMS,
+      googleConfig: INITIAL_GOOGLE_CONFIG,
+      youtubeConfig: INITIAL_YOUTUBE_CONFIG
     };
   }
 
@@ -233,12 +273,17 @@ export function loadDatabase(): DBStore {
         certificates: INITIAL_CERTIFICATES,
         auditLogs: INITIAL_AUDIT_LOGS,
         discussions: INITIAL_DISCUSSIONS,
-        exams: INITIAL_EXAMS
+        exams: INITIAL_EXAMS,
+        googleConfig: INITIAL_GOOGLE_CONFIG,
+        youtubeConfig: INITIAL_YOUTUBE_CONFIG
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(initialStore));
       return initialStore;
     }
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    if (!parsed.googleConfig) parsed.googleConfig = INITIAL_GOOGLE_CONFIG;
+    if (!parsed.youtubeConfig) parsed.youtubeConfig = INITIAL_YOUTUBE_CONFIG;
+    return parsed;
   } catch {
     return {
       roles: INITIAL_ROLES,
@@ -250,7 +295,9 @@ export function loadDatabase(): DBStore {
       certificates: INITIAL_CERTIFICATES,
       auditLogs: INITIAL_AUDIT_LOGS,
       discussions: INITIAL_DISCUSSIONS,
-      exams: INITIAL_EXAMS
+      exams: INITIAL_EXAMS,
+      googleConfig: INITIAL_GOOGLE_CONFIG,
+      youtubeConfig: INITIAL_YOUTUBE_CONFIG
     };
   }
 }
