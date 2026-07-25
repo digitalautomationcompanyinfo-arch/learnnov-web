@@ -9,8 +9,9 @@ interface AuthContextType {
   userRole: string | null;
   userName: string | null;
   userAvatar: string | null;
+  userEmail: string | null;
   isLoading: boolean;
-  login: (accessToken: string, refreshToken: string, role: string, name: string, avatar: string) => void;
+  login: (accessToken: string, refreshToken: string, role: string, name: string, avatar: string, email?: string) => void;
   logout: () => void;
 }
 
@@ -23,6 +24,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userRole, setUserRole] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -32,6 +34,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const role = localStorage.getItem('userRole');
     const name = localStorage.getItem('userName');
     const avatar = localStorage.getItem('userAvatar');
+    const email = localStorage.getItem('userEmail');
 
     if (token && loggedIn) {
       setTimeout(() => {
@@ -40,6 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUserRole(role);
         setUserName(name);
         setUserAvatar(avatar);
+        setUserEmail(email);
         setIsLoading(false);
       }, 0);
     } else {
@@ -54,19 +58,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     refreshToken: string,
     role: string,
     name: string,
-    avatar: string
+    avatar: string,
+    email?: string
   ) => {
+    const finalEmail = email || `${name.replace(/\s+/g, '.').toLowerCase()}@learnnov.com`;
     localStorage.setItem('accessToken', token);
     localStorage.setItem('refreshToken', refreshToken);
     localStorage.setItem('userRole', role);
     localStorage.setItem('userName', name);
     localStorage.setItem('userAvatar', avatar);
+    localStorage.setItem('userEmail', finalEmail);
     localStorage.setItem('isLoggedIn', 'true');
 
     setAccessToken(token);
     setUserRole(role);
     setUserName(name);
     setUserAvatar(avatar);
+    setUserEmail(finalEmail);
     setIsLoggedIn(true);
   };
 
@@ -76,12 +84,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('userRole');
     localStorage.removeItem('userName');
     localStorage.removeItem('userAvatar');
+    localStorage.removeItem('userEmail');
     localStorage.removeItem('isLoggedIn');
 
     setAccessToken(null);
     setUserRole(null);
     setUserName(null);
     setUserAvatar(null);
+    setUserEmail(null);
     setIsLoggedIn(false);
 
     router.push('/login');
@@ -95,6 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         userRole,
         userName,
         userAvatar,
+        userEmail,
         isLoading,
         login,
         logout,
