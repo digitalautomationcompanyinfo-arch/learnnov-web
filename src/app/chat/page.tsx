@@ -105,7 +105,7 @@ interface ChatMessageResponse {
 
 export default function ChatbotPage() {
   const router = useRouter();
-  const { isLoggedIn, accessToken, isLoading } = useAuth();
+  const { isLoggedIn, isLoading } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -147,7 +147,7 @@ export default function ChatbotPage() {
   }, [messages, isTyping]);
 
   const sendMessage = async () => {
-    if (!input.trim() || !accessToken) return;
+    if (!input.trim() || !isLoggedIn) return;
     
     const userMsg: Message = { id: Date.now().toString(), role: 'user', content: input };
     setMessages(prev => [...prev, userMsg]);

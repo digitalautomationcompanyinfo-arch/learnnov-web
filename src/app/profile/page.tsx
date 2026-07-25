@@ -6,7 +6,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { loadDatabase, saveDatabase } from '@/services/db-store';
 
 export default function ProfilePage() {
-  const { userName, userRole, accessToken, userEmail } = useAuth();
+  const { userName, userRole, isLoggedIn, userEmail } = useAuth();
   const { language, isRtl } = useLanguage();
 
   const [name, setName] = useState(userName || 'طالب ليرنوف المتميز');
@@ -102,7 +102,7 @@ export default function ProfilePage() {
             </div>
             <div className="form-group">
               <label>{language === 'ar' ? 'حالة التوثيق الرقمي' : 'JWT Auth Security'}</label>
-              <input type="text" value={accessToken ? 'نشط وموثق برمز سحابي' : 'جلسة محلية محفوطة'} readOnly />
+              <input type="text" value={isLoggedIn ? 'نشط وموثق برمز سحابي' : 'جلسة محلية محفوطة'} readOnly />
             </div>
           </div>
 

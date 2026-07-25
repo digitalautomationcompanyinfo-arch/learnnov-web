@@ -102,48 +102,23 @@ export default function LoginPage() {
     }
 
     try {
-      // 1. Save new user into persistent DB store
-      const db = loadDatabase();
-      const roleId = role === 'admin' ? 1 : role === 'instructor' ? 2 : 4;
-      const newUser = {
-        id: Date.now(),
-        name: fullName,
-        email: email,
-        role_id: roleId,
-        status: 'active' as const,
-        mfa_enabled: true,
-        created_at: new Date().toISOString()
-      };
-
-      // Avoid duplicates
-      const exists = db.users.some(u => u.email.toLowerCase() === email.toLowerCase());
-      if (!exists) {
-        db.users.push(newUser);
-        db.auditLogs.unshift({
-          id: Date.now(),
-          user: fullName,
-          action: 'تسجيل حساب جديد بالبريد الإلكتروني',
-          resource: `User Registration: ${email}`,
-          ip: '197.245.89.12',
-          timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19)
-        });
-        saveDatabase(db);
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: fullName, email, password, role })
+      });
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || 'حدث خطأ أثناء عملية التسجيل');
       }
 
-      // 2. Perform Login Session
-      login(
-        'access-token-' + Date.now(),
-        'refresh-token-' + Date.now(),
-        role,
-        fullName,
-        role === 'instructor' ? 'د' : 'أ',
-        email
-      );
+      login(data.user.role, data.user.name, data.user.avatar, data.user.email);
 
       setSuccess(language === 'ar' ? 'تم إنشاء الحساب بنجاح وتفعيل الصلاحيات!' : 'Account created successfully with full RBAC permissions!');
       setTimeout(() => {
-        if (role === 'admin') router.push('/admin');
-        else if (role === 'instructor') router.push('/instructor');
+        if (data.user.role === 'admin') router.push('/admin');
+        else if (data.user.role === 'instructor') router.push('/instructor');
         else router.push('/');
       }, 1000);
     } catch (err: any) {
@@ -160,58 +135,62 @@ export default function LoginPage() {
 
     try {
       const loginEmail = email || (role === 'student' ? 'student.demo@learnnov.com' : role === 'instructor' ? 'dr.ali@learnnov.com' : 'sara.admin@learnnov.com');
-      const loginName = role === 'student'
-        ? (language === 'ar' ? 'طالب ليرنوف المتميز' : 'Distinguished LearnNov Student')
-        : role === 'instructor'
-        ? 'د. علي البراك'
-        : 'م. سارة العتيبي';
-
-      let data = { access: 'demo-access-token-9821', refresh: 'demo-refresh-token-9821' };
-      try {
-        data = await api.post<{ access: string; refresh: string }>('/api/auth/token/', {
-          username: loginEmail,
-          password
-        });
-      } catch (apiErr) {
-        console.warn('Backend API offline, using client session fallback:', apiErr);
+      
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: loginEmail, password: password || 'Password123!' })
+      });
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || 'فشل تسجيل الدخول');
       }
 
-      login(
-        data.access,
-        data.refresh,
-        role,
-        loginName,
-        role === 'student' ? 'أ' : 'د',
-        loginEmail
-      );
+      login(data.user.role, data.user.name, data.user.avatar, data.user.email);
 
-      if (role === 'admin') {
+      if (data.user.role === 'admin') {
         router.push('/admin');
-      } else if (role === 'instructor') {
+      } else if (data.user.role === 'instructor') {
         router.push('/instructor');
       } else {
         router.push('/');
       }
-    } catch (err) {
-      const error = err as Error;
-      setError(error.message || t('serverError'));
+    } catch (err: any) {
+      setError(err.message || t('serverError'));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGoogleSso = () => {
+  const handleGoogleSso = async () => {
     const ssoEmail = 'user.workspace@learnnov.com';
     const ssoName = 'حساب Google Workspace المؤسسي';
-    login(
-      'google-oauth-access-token-' + Date.now(),
-      'google-oauth-refresh-token-' + Date.now(),
-      'student',
-      ssoName,
-      'G',
-      ssoEmail
-    );
-    router.push('/workspace');
+    
+    // Simulate login via SSO through backend
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: ssoName, email: ssoEmail, password: 'SSO_PASSWORD', role: 'student' })
+    });
+    const data = await res.json();
+    if (res.ok || res.status === 409) {
+      // If 409, it means already registered, so we login instead
+      if (res.status === 409) {
+        const loginRes = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: ssoEmail, password: 'SSO_PASSWORD' })
+        });
+        const loginData = await loginRes.json();
+        if (loginRes.ok) {
+          login(loginData.user.role, loginData.user.name, loginData.user.avatar, loginData.user.email);
+        }
+      } else {
+        login(data.user.role, data.user.name, data.user.avatar, data.user.email);
+      }
+      router.push('/workspace');
+    }
   };
 
   return (
