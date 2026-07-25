@@ -53,54 +53,14 @@ export default function LoginPage() {
     return score;
   };
 
-  const handleSendOtp = () => {
-    if (!email || !email.includes('@')) {
-      setError(language === 'ar' ? 'يرجى كتابة بريد إلكتروني صحيح لطلب رمز التفعيل OTP' : 'Please enter a valid email to send OTP code');
+  const handleSendOtp = async () => {
+    if (!fullName.trim() || !email || !email.includes('@') || password.length < 6 || password !== confirmPassword) {
+      setError(language === 'ar' ? 'يرجى تعبئة كافة الحقول بشكل صحيح أولاً' : 'Please fill all fields correctly first');
       return;
     }
-    setError('');
-    const generated = Math.floor(100000 + Math.random() * 900000).toString();
-    setOtpCode(generated);
-    setOtpSent(true);
-    setSuccess(language === 'ar' ? `تم إرسال رمز التفعيل [ ${generated} ] إلى بريدك الإلكتروني (${email})` : `Activation OTP code [ ${generated} ] sent to (${email})`);
-  };
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
     setLoading(true);
     setError('');
-    setSuccess('');
-
-    if (!fullName.trim()) {
-      setError(language === 'ar' ? 'يرجى أدخال الاسم الكامل' : 'Please enter full name');
-      setLoading(false);
-      return;
-    }
-
-    if (!email || !email.includes('@')) {
-      setError(language === 'ar' ? 'يرجى أدخال بريد إلكتروني صحيح' : 'Please enter a valid email address');
-      setLoading(false);
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError(language === 'ar' ? 'كلمات المرور غير متطابقة!' : 'Passwords do not match!');
-      setLoading(false);
-      return;
-    }
-
-    if (password.length < 6) {
-      setError(language === 'ar' ? 'يجب أن تتكون كلمة المرور من 6 خانات على الأقل' : 'Password must be at least 6 characters');
-      setLoading(false);
-      return;
-    }
-
-    if (otpSent && otpInput.trim() !== otpCode) {
-      setError(language === 'ar' ? 'رمز التفعيل OTP غير صحيح!' : 'Invalid OTP activation code!');
-      setLoading(false);
-      return;
-    }
-
+    
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
@@ -110,19 +70,58 @@ export default function LoginPage() {
       const data = await res.json();
       
       if (!res.ok) {
-        throw new Error(data.error || 'حدث خطأ أثناء عملية التسجيل');
+        throw new Error(data.error || 'حدث خطأ أثناء إرسال البريد');
+      }
+
+      setOtpSent(true);
+      setSuccess(data.message + (data.previewUrl ? ` (Preview: ${data.previewUrl})` : ''));
+    } catch (err: any) {
+      setError(err.message || 'حدث خطأ أثناء العملية');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    if (!otpSent) {
+      setError(language === 'ar' ? 'يرجى طلب رمز التفعيل أولاً بالنقر على الزر' : 'Please request OTP first by clicking the button');
+      setLoading(false);
+      return;
+    }
+
+    if (!otpInput.trim()) {
+      setError(language === 'ar' ? 'يرجى إدخال رمز التحقق (OTP)' : 'Please enter verification code (OTP)');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp: otpInput.trim() })
+      });
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || 'رمز التحقق غير صحيح');
       }
 
       login(data.user.role, data.user.name, data.user.avatar, data.user.email);
 
-      setSuccess(language === 'ar' ? 'تم إنشاء الحساب بنجاح وتفعيل الصلاحيات!' : 'Account created successfully with full RBAC permissions!');
+      setSuccess(language === 'ar' ? 'تم التحقق من البريد وإنشاء الحساب بنجاح!' : 'Email verified and account created successfully!');
       setTimeout(() => {
         if (data.user.role === 'admin') router.push('/admin');
         else if (data.user.role === 'instructor') router.push('/instructor');
         else router.push('/');
       }, 1000);
     } catch (err: any) {
-      setError(err.message || 'حدث خطأ أثناء عملية التسجيل');
+      setError(err.message || 'حدث خطأ أثناء عملية التحقق');
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { loadDatabase, saveDatabase } from '@/services/db-store';
-import { signToken } from '@/lib/auth';
+import { loadServerDB, saveServerDB } from '@/lib/server-db';
+import { sendOtpEmail } from '@/lib/email';
 
 export async function POST(request: Request) {
   try {
@@ -11,57 +11,43 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const db = loadDatabase();
+    const db = loadServerDB();
     
-    // Check if user exists
-    const exists = db.users.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
+    // Check if user already exists
+    const exists = db.users.find(u => u.email.toLowerCase() === email.toLowerCase());
     if (exists) {
-      return NextResponse.json({ error: 'Email already registered' }, { status: 409 });
+      return NextResponse.json({ error: 'البريد الإلكتروني مسجل مسبقاً' }, { status: 409 });
     }
 
-    const roleId = role === 'admin' ? 1 : role === 'instructor' ? 2 : 4;
-    const userId = Date.now().toString();
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Send email
+    const previewUrl = await sendOtpEmail(email, otp);
 
-    // Create user (Mock DB storing)
-    db.users.push({
-      id: parseInt(userId),
-      name,
+    // Save OTP to DB
+    const expiresAt = Date.now() + 15 * 60 * 1000; // 15 mins
+    
+    // Remove old OTPs for this email if any
+    db.otps = db.otps.filter(o => o.email.toLowerCase() !== email.toLowerCase());
+    
+    db.otps.push({
       email,
-      role_id: roleId,
-      status: 'active',
-      mfa_enabled: true,
-      created_at: new Date().toISOString()
-    });
-
-    db.auditLogs.unshift({
-      id: Date.now(),
-      user: name,
-      action: 'تسجيل حساب جديد - Backend',
-      resource: `User Registration: ${email}`,
-      ip: request.headers.get('x-forwarded-for') || '127.0.0.1',
-      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19)
+      otp,
+      expiresAt,
+      userData: { name, email, role, password }
     });
     
-    saveDatabase(db);
+    saveServerDB(db);
 
-    // Generate JWT
-    const avatar = role === 'instructor' ? 'د' : role === 'admin' ? 'م' : 'أ';
-    const token = await signToken({ userId, role, email, name, avatar });
-
-    // Set HttpOnly Cookie
-    const response = NextResponse.json({ success: true, user: { name, email, role, avatar } }, { status: 201 });
-    response.cookies.set({
-      name: 'learnnov_session',
-      value: token,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 // 1 day
-    });
-
-    return response;
+    return NextResponse.json({ 
+      success: true, 
+      message: 'تم إرسال رمز التحقق إلى بريدك الإلكتروني',
+      previewUrl // Returned only in development for easy testing
+    }, { status: 200 });
+    
   } catch (error) {
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    console.error('Register OTP Error:', error);
+    return NextResponse.json({ error: 'حدث خطأ أثناء إرسال البريد الإلكتروني' }, { status: 500 });
   }
 }

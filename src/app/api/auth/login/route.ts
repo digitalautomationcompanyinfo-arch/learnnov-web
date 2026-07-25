@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { loadDatabase, saveDatabase } from '@/services/db-store';
+import { loadServerDB, saveServerDB } from '@/lib/server-db';
 import { signToken } from '@/lib/auth';
 
 export async function POST(request: Request) {
@@ -11,20 +11,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing credentials' }, { status: 400 });
     }
 
-    const db = loadDatabase();
+    const db = loadServerDB();
     
-    // Check if user exists (Mock authentication logic)
-    const user = db.users.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
+    // Check if user exists
+    const user = db.users.find((u) => u.email.toLowerCase() === email.toLowerCase());
     
-    // Demo fallback logic if user is not in DB but matches demo credentials
     let role = 'student';
     let name = 'طالب ليرنوف المتميز';
     let userId = Date.now().toString();
 
     if (user) {
-      role = user.role_id === 1 ? 'admin' : user.role_id === 2 ? 'instructor' : 'student';
+      // In a real app we would check password hash here
+      role = user.role;
       name = user.name;
-      userId = user.id.toString();
+      userId = user.id;
     } else {
       // Fallback for demo users
       if (email.includes('admin')) {
@@ -33,18 +33,10 @@ export async function POST(request: Request) {
       } else if (email.includes('dr.')) {
         role = 'instructor';
         name = 'د. علي البراك (محاضر)';
+      } else {
+        return NextResponse.json({ error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' }, { status: 401 });
       }
     }
-
-    db.auditLogs.unshift({
-      id: Date.now(),
-      user: name,
-      action: 'تسجيل دخول ناجح - Backend',
-      resource: `User Login: ${email}`,
-      ip: request.headers.get('x-forwarded-for') || '127.0.0.1',
-      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19)
-    });
-    saveDatabase(db);
 
     const avatar = role === 'instructor' ? 'د' : role === 'admin' ? 'م' : 'أ';
     const token = await signToken({ userId, role, email, name, avatar });
